@@ -2,8 +2,8 @@ import socket
 import re
 import ipaddress
 from ..exceptions import InvalidIndicator
-from ..constants import PYVERSION, RE_ASN, RE_EMAIL, RE_FQDN, RE_HASH, RE_IPV4, RE_IPV4_CIDR, RE_IPV4_PADDING, \
-    RE_URI_SCHEMES
+from ..constants import PYVERSION, RE_ASN, RE_EMAIL, RE_FQDN, RE_HASH, RE_IPV4, \
+    RE_IPV4_CIDR, RE_IPV4_PADDING, RE_IPV6, RE_URI_SCHEMES
 
 
 if PYVERSION == 3:
@@ -71,6 +71,37 @@ def resolve_itype(indicator, test_broken=False):
             return True
         except ValueError as e:
             return False
+
+    def _ipv4_port(s):
+        try:
+            ip, port = s.split(':', 1)
+        except ValueError:
+            return False
+        
+        if RE_IPV4.match(ip):
+            try:
+                if 0 <= int(port) <= 65535:
+                    return (ip, port)
+            except ValueError:
+                pass
+        return False
+
+    def _ipv6_port(s):
+        # [2001:db8::1]:8080 format
+        try:
+            ip, port = s.split(']:', 1)
+        except ValueError:
+            return False
+        
+        if isinstance(ip, str) and len(ip) > 0 and ip[0] == '[':
+            ip = ip[1:]
+            if RE_IPV6.match(ip):
+                try:
+                    if 0 <= int(port) <= 65535:
+                        return (ip, port)
+                except ValueError:
+                    pass
+        return False
 
     def _fqdn(s):
         if RE_FQDN.match(s):
@@ -141,8 +172,14 @@ def resolve_itype(indicator, test_broken=False):
     elif _ipv4(indicator) or _ipv4_cidr(indicator):
         return 'ipv4'
 
+    elif _ipv4_port(indicator):
+        return 'ipv4-port|' + '|'.join(_ipv4_port(indicator))
+
     elif _ipv6(indicator):
         return 'ipv6'
+    
+    elif _ipv6_port(indicator):
+        return 'ipv6-port|' + '|'.join(_ipv6_port(indicator))
 
     elif _email(indicator):
         return 'email'
@@ -203,7 +240,7 @@ def normalize_indicator(i, itype=None, lowercase=False, lowercase_explicit=False
 
 def is_subdomain(i):
     itype = resolve_itype(i)
-    if itype is not 'fqdn':
+    if itype != 'fqdn':
         return
 
     bits = i.split('.')

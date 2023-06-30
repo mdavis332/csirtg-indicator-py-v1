@@ -80,6 +80,18 @@ def test_ipv4_padded():
     for k, v in d.items():
         assert Indicator(k).indicator == v
 
+def test_ipv4_with_ports():
+    d = {
+        '192.168.0.2:8080': ('192.168.0.2', '8080'),
+        '10.5.2.1:5555': ('10.5.2.1', '5555'),
+        '192.168.100.010:1234': ('192.168.100.10', '1234')
+    }
+
+    for k, v in d.items():
+        k = Indicator(k)
+        assert k.indicator == v[0]
+        assert k.portlist == v[1]
+        assert k.itype == 'ipv4'
 
 def test_ipv4_random():
     for d in range(0, 100):

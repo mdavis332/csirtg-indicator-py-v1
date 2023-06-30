@@ -30,6 +30,18 @@ def test_ipv6_ok():
 
     _ok(data)
 
+def test_ipv6_with_ports():
+    d = {
+        '[2001:1608:10:147::21]:8888': ('2001:1608:10:147::21', '8888'),
+        '[2001:db8::1]:8080': ('2001:db8::1', '8080')
+    }
+
+    for k, v in d.items():
+        k = Indicator(k)
+        assert k.indicator == v[0]
+        assert k.portlist == v[1]
+        assert k.itype == 'ipv6'
+
 
 def test_ipv6_nok():
     data = [

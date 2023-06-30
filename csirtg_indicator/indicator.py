@@ -117,6 +117,13 @@ class Indicator(object):
         self.itype = resolve_itype(i.lower())
         self._indicator = i
 
+        if 'ipv4-port' in self.itype or 'ipv6-port' in self.itype:
+            itype, self._indicator, self.portlist = self.itype.split('|', 3)
+            if itype == 'ipv4-port':
+                self.itype = 'ipv4'
+            else:
+                self.itype = 'ipv6'
+        
         if self.itype in ['url', 'fqdn', 'ssdeep']:
             self._indicator = normalize_indicator(self._indicator, itype=self.itype, 
                 lowercase=self._lowercase, lowercase_explicit=self._lowercase_explicit)
